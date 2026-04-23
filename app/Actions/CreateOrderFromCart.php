@@ -27,10 +27,29 @@ class CreateOrderFromCart
         Address $address,
         ?Carbon $scheduledFor = null,
         ?string $customerNotes = null,
+        string $deliveryTier = 'standard',
+        bool $statementOfUseAccepted = false,
+        bool $n2oAgreementAccepted = false,
     ): Order {
-        $priced = $this->pricing->priceCart($items, $address->postcode);
+        $priced = $this->pricing->priceCart($items, $address->postcode, $deliveryTier);
 
-        return DB::transaction(function () use ($customer, $address, $scheduledFor, $customerNotes, $priced) {
+        $hasAgeRestricted = false;
+        foreach ($priced['lines'] as $line) {
+            if (($line['product']->is_age_restricted ?? false)) {
+                $hasAgeRestricted = true;
+                break;
+            }
+        }
+
+        if ($hasAgeRestricted && (! $statementOfUseAccepted || ! $n2oAgreementAccepted)) {
+            throw new \InvalidArgumentException('Age-restricted items require the statement of use and N2O agreement to be accepted.');
+        }
+
+        if ($hasAgeRestricted && ! $customer->isVerified()) {
+            throw new \InvalidArgumentException('Your account must be ID-verified before ordering age-restricted items.');
+        }
+
+        return DB::transaction(function () use ($customer, $address, $scheduledFor, $customerNotes, $priced, $deliveryTier, $statementOfUseAccepted, $n2oAgreementAccepted) {
             $order = Order::create([
                 'reference' => $this->nextReference(),
                 'customer_id' => $customer->id,
@@ -40,6 +59,9 @@ class CreateOrderFromCart
                 'delivery_fee_pence' => $priced['delivery_fee']->pence,
                 'vat_pence' => $priced['vat']->pence,
                 'total_pence' => $priced['total']->pence,
+                'delivery_tier' => $deliveryTier,
+                'statement_of_use_accepted' => $statementOfUseAccepted,
+                'n2o_agreement_accepted' => $n2oAgreementAccepted,
                 'scheduled_for' => $scheduledFor,
                 'customer_notes' => $customerNotes,
             ]);

@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'role'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'role', 'verification_status', 'verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -25,10 +25,16 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
     public const ROLE_DRIVER = 'driver';
 
+    public const VERIFY_UNVERIFIED = 'unverified';
+    public const VERIFY_PENDING = 'pending';
+    public const VERIFY_VERIFIED = 'verified';
+    public const VERIFY_REJECTED = 'rejected';
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -66,5 +72,20 @@ class User extends Authenticatable
     public function isCustomer(): bool
     {
         return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verification_status === self::VERIFY_VERIFIED;
+    }
+
+    public function idVerifications(): HasMany
+    {
+        return $this->hasMany(IdVerification::class);
+    }
+
+    public function latestIdVerification()
+    {
+        return $this->hasOne(IdVerification::class)->latestOfMany();
     }
 }

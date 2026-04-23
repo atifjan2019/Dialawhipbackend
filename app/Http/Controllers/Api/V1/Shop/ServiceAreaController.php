@@ -22,8 +22,12 @@ class ServiceAreaController extends Controller
             'data' => [
                 'postcode' => ServiceArea::normalisePostcode((string) $postcode),
                 'available' => $area !== null,
-                'delivery_fee_pence' => $area?->delivery_fee_pence,
                 'postcode_prefix' => $area?->postcode_prefix,
+                'delivery_fee_pence' => $area?->delivery_fee_pence,
+                'eta_standard_minutes' => $area?->eta_standard_minutes,
+                'eta_priority_minutes' => $area?->eta_priority_minutes,
+                'priority_fee_pence' => $area?->priority_fee_pence,
+                'super_fee_pence' => $area?->super_fee_pence,
             ],
         ]);
     }

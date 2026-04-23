@@ -5,9 +5,11 @@ use App\Http\Controllers\Api\V1\Admin\AdminDriverController;
 use App\Http\Controllers\Api\V1\Admin\AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\AdminProductController;
 use App\Http\Controllers\Api\V1\Admin\AdminReportController;
+use App\Http\Controllers\Api\V1\Admin\AdminVerificationController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Customer\AddressController;
 use App\Http\Controllers\Api\V1\Customer\CheckoutController;
+use App\Http\Controllers\Api\V1\Customer\IdVerificationController;
 use App\Http\Controllers\Api\V1\Customer\OrderController;
 use App\Http\Controllers\Api\V1\Driver\DeliveryController;
 use App\Http\Controllers\Api\V1\Shop\CatalogController;
@@ -63,6 +65,9 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
 
         Route::post('checkout/session', [CheckoutController::class, 'session']);
         Route::get('checkout/confirm/{sessionId}', [CheckoutController::class, 'confirm']);
+
+        Route::get('me/verifications', [IdVerificationController::class, 'index']);
+        Route::post('me/verifications', [IdVerificationController::class, 'store']);
     });
 
     // Admin/Staff
@@ -86,6 +91,12 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
         Route::get('reports/revenue', [AdminReportController::class, 'revenue']);
         Route::get('reports/top-products', [AdminReportController::class, 'topProducts']);
         Route::get('exports/orders.csv', [AdminReportController::class, 'exportOrders']);
+
+        Route::get('verifications', [AdminVerificationController::class, 'index']);
+        Route::get('verifications/{verification}', [AdminVerificationController::class, 'show']);
+        Route::get('verifications/{verification}/download', [AdminVerificationController::class, 'download']);
+        Route::post('verifications/{verification}/approve', [AdminVerificationController::class, 'approve']);
+        Route::post('verifications/{verification}/reject', [AdminVerificationController::class, 'reject']);
     });
 
     // Driver

@@ -9,12 +9,20 @@ class ServiceArea extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['postcode_prefix', 'delivery_fee_pence', 'is_active'];
+    protected $fillable = [
+        'postcode_prefix', 'delivery_fee_pence', 'is_active',
+        'eta_standard_minutes', 'eta_priority_minutes',
+        'priority_fee_pence', 'super_fee_pence',
+    ];
 
     protected function casts(): array
     {
         return [
             'delivery_fee_pence' => 'integer',
+            'eta_standard_minutes' => 'integer',
+            'eta_priority_minutes' => 'integer',
+            'priority_fee_pence' => 'integer',
+            'super_fee_pence' => 'integer',
             'is_active' => 'boolean',
         ];
     }

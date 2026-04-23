@@ -20,9 +20,14 @@ class Order extends Model
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUNDED = 'refunded';
 
+    public const TIER_STANDARD = 'standard';
+    public const TIER_PRIORITY = 'priority';
+    public const TIER_SUPER = 'super';
+
     protected $fillable = [
         'reference', 'customer_id', 'address_id', 'assigned_driver_id',
         'status', 'subtotal_pence', 'delivery_fee_pence', 'vat_pence', 'total_pence',
+        'delivery_tier', 'statement_of_use_accepted', 'n2o_agreement_accepted',
         'stripe_session_id', 'stripe_payment_intent_id',
         'scheduled_for', 'customer_notes', 'driver_notes',
     ];
@@ -34,6 +39,8 @@ class Order extends Model
             'delivery_fee_pence' => 'integer',
             'vat_pence' => 'integer',
             'total_pence' => 'integer',
+            'statement_of_use_accepted' => 'boolean',
+            'n2o_agreement_accepted' => 'boolean',
             'scheduled_for' => 'datetime',
         ];
     }

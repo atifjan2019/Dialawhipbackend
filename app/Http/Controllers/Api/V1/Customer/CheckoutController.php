@@ -25,6 +25,9 @@ class CheckoutController extends Controller
             address: $address,
             scheduledFor: $request->filled('scheduled_for') ? Carbon::parse($request->input('scheduled_for')) : null,
             customerNotes: $request->input('customer_notes'),
+            deliveryTier: (string) $request->input('delivery_tier', 'standard'),
+            statementOfUseAccepted: (bool) $request->boolean('statement_of_use_accepted'),
+            n2oAgreementAccepted: (bool) $request->boolean('n2o_agreement_accepted'),
         );
 
         $session = $stripe->createCheckoutSession($order);

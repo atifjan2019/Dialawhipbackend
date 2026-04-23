@@ -19,8 +19,11 @@ class CheckoutSessionRequest extends FormRequest
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:500'],
             'items.*.options' => ['nullable', 'array'],
             'address_id' => ['required', 'string', 'exists:addresses,id'],
-            'scheduled_for' => ['nullable', 'date', 'after:+'.(int) env('ORDER_LEAD_TIME_HOURS', 24).' hours'],
+            'delivery_tier' => ['nullable', 'string', 'in:standard,priority,super'],
+            'scheduled_for' => ['nullable', 'date'],
             'customer_notes' => ['nullable', 'string', 'max:1000'],
+            'statement_of_use_accepted' => ['nullable', 'boolean'],
+            'n2o_agreement_accepted' => ['nullable', 'boolean'],
         ];
     }
 }

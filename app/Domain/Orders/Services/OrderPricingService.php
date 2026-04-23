@@ -19,7 +19,7 @@ class OrderPricingService
     /**
      * @param  array<int, CartLine>  $items
      */
-    public function priceCart(array $items, ?string $postcode = null): array
+    public function priceCart(array $items, ?string $postcode = null, string $tier = 'standard'): array
     {
         if ($items === []) {
             throw new \InvalidArgumentException('Cart is empty.');
@@ -69,7 +69,13 @@ class OrderPricingService
             if (! $serviceArea) {
                 throw new PostcodeOutOfAreaException($postcode);
             }
-            $deliveryFee = Money::fromPence($serviceArea->delivery_fee_pence);
+            $base = (int) $serviceArea->delivery_fee_pence;
+            $surcharge = match ($tier) {
+                'priority' => (int) ($serviceArea->priority_fee_pence ?? 500),
+                'super' => (int) ($serviceArea->super_fee_pence ?? 1500),
+                default => 0,
+            };
+            $deliveryFee = Money::fromPence($base + $surcharge);
         }
 
         // VAT is zero-rated for most cold catered food in the UK.

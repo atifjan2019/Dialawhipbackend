@@ -19,10 +19,11 @@ class PricingController extends Controller
             'items.*.product_id' => ['required', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:500'],
             'postcode' => ['nullable', 'string', 'max:10'],
+            'delivery_tier' => ['nullable', 'string', 'in:standard,priority,super'],
         ]);
 
         try {
-            $result = $pricing->priceCart($data['items'], $data['postcode'] ?? null);
+            $result = $pricing->priceCart($data['items'], $data['postcode'] ?? null, $data['delivery_tier'] ?? 'standard');
         } catch (BelowMinimumOrderException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -38,6 +39,14 @@ class PricingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        $hasAgeRestricted = false;
+        foreach ($result['lines'] as $line) {
+            if (($line['product']->is_age_restricted ?? false)) {
+                $hasAgeRestricted = true;
+                break;
+            }
+        }
+
         return response()->json([
             'data' => [
                 'subtotal_pence' => $result['subtotal']->pence,
@@ -45,10 +54,21 @@ class PricingController extends Controller
                 'vat_pence' => $result['vat']->pence,
                 'total_pence' => $result['total']->pence,
                 'minimum_pence' => (int) Setting::get('order.minimum_pence', 2000),
+                'delivery_tier' => $data['delivery_tier'] ?? 'standard',
+                'requires_id_verification' => $hasAgeRestricted,
+                'service_area' => $result['service_area'] ? [
+                    'postcode_prefix' => $result['service_area']->postcode_prefix,
+                    'eta_standard_minutes' => $result['service_area']->eta_standard_minutes,
+                    'eta_priority_minutes' => $result['service_area']->eta_priority_minutes,
+                    'priority_fee_pence' => $result['service_area']->priority_fee_pence,
+                    'super_fee_pence' => $result['service_area']->super_fee_pence,
+                ] : null,
                 'lines' => array_map(fn ($l) => [
                     'product_id' => $l['product']->id,
                     'name' => $l['product']->name,
+                    'brand' => $l['product']->brand,
                     'quantity' => $l['quantity'],
+                    'is_age_restricted' => (bool) $l['product']->is_age_restricted,
                     'unit_price_pence' => $l['unit_price']->pence,
                     'line_total_pence' => $l['line_total']->pence,
                 ], $result['lines']),

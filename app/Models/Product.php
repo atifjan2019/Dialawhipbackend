@@ -12,8 +12,8 @@ class Product extends Model
     use HasUlids, SoftDeletes;
 
     protected $fillable = [
-        'category_id', 'name', 'slug', 'description', 'price_pence',
-        'image_url', 'options_json', 'is_active',
+        'category_id', 'name', 'brand', 'slug', 'description', 'price_pence',
+        'image_url', 'options_json', 'short_spec', 'is_active', 'is_age_restricted',
         'available_from', 'available_until', 'stock_count',
     ];
 
@@ -23,7 +23,9 @@ class Product extends Model
             'price_pence' => 'integer',
             'stock_count' => 'integer',
             'options_json' => 'array',
+            'short_spec' => 'array',
             'is_active' => 'boolean',
+            'is_age_restricted' => 'boolean',
         ];
     }
 
@@ -42,9 +44,11 @@ class Product extends Model
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'brand' => $this->brand,
             'slug' => $this->slug,
             'price_pence' => $this->price_pence,
             'image_url' => $this->image_url,
+            'is_age_restricted' => (bool) $this->is_age_restricted,
             'captured_at' => now()->toIso8601String(),
         ];
     }
