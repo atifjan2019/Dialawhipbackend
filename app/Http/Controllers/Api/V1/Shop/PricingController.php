@@ -17,6 +17,7 @@ class PricingController extends Controller
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'string'],
+            'items.*.variant_id' => ['nullable', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:500'],
             'postcode' => ['nullable', 'string', 'max:10'],
             'delivery_tier' => ['nullable', 'string', 'in:standard,priority,super'],
@@ -65,6 +66,8 @@ class PricingController extends Controller
                 ] : null,
                 'lines' => array_map(fn ($l) => [
                     'product_id' => $l['product']->id,
+                    'variant_id' => $l['variant']?->id,
+                    'variant_label' => $l['variant']?->label,
                     'name' => $l['product']->name,
                     'brand' => $l['product']->brand,
                     'quantity' => $l['quantity'],

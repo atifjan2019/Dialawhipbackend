@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\V1\Admin\AdminDriverController;
 use App\Http\Controllers\Api\V1\Admin\AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\AdminProductController;
 use App\Http\Controllers\Api\V1\Admin\AdminReportController;
+use App\Http\Controllers\Api\V1\Admin\AdminServiceAreaController;
+use App\Http\Controllers\Api\V1\Admin\AdminSettingsController;
 use App\Http\Controllers\Api\V1\Admin\AdminVerificationController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Customer\AddressController;
@@ -82,6 +84,7 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
 
         Route::get('products', [AdminProductController::class, 'index']);
         Route::post('products', [AdminProductController::class, 'store']);
+        Route::get('products/{product}', [AdminProductController::class, 'show']);
         Route::patch('products/{product}', [AdminProductController::class, 'update']);
         Route::delete('products/{product}', [AdminProductController::class, 'destroy']);
 
@@ -97,6 +100,20 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
         Route::get('verifications/{verification}/download', [AdminVerificationController::class, 'download']);
         Route::post('verifications/{verification}/approve', [AdminVerificationController::class, 'approve']);
         Route::post('verifications/{verification}/reject', [AdminVerificationController::class, 'reject']);
+
+        // Website settings — logo, favicon, social, address, phone, SEO, legal, maintenance, etc.
+        Route::get('settings', [AdminSettingsController::class, 'index']);
+        Route::put('settings', [AdminSettingsController::class, 'update']);
+        Route::post('settings/upload', [AdminSettingsController::class, 'upload']);
+        Route::patch('settings/{key}', [AdminSettingsController::class, 'updateOne'])->where('key', '[A-Za-z0-9_.\-]+');
+
+        // Delivery charges — postcode-based service areas
+        Route::get('service-areas', [AdminServiceAreaController::class, 'index']);
+        Route::post('service-areas', [AdminServiceAreaController::class, 'store']);
+        Route::post('service-areas/bulk', [AdminServiceAreaController::class, 'bulkUpsert']);
+        Route::get('service-areas/{serviceArea}', [AdminServiceAreaController::class, 'show']);
+        Route::patch('service-areas/{serviceArea}', [AdminServiceAreaController::class, 'update']);
+        Route::delete('service-areas/{serviceArea}', [AdminServiceAreaController::class, 'destroy']);
     });
 
     // Driver

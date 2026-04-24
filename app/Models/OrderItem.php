@@ -11,7 +11,7 @@ class OrderItem extends Model
     use HasUlids;
 
     protected $fillable = [
-        'order_id', 'product_id', 'product_snapshot_json',
+        'order_id', 'product_id', 'product_variant_id', 'variant_label', 'product_snapshot_json',
         'quantity', 'unit_price_pence', 'line_total_pence', 'options_json',
     ];
 

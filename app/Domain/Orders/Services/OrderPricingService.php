@@ -5,13 +5,14 @@ namespace App\Domain\Orders\Services;
 use App\Domain\Orders\Exceptions\BelowMinimumOrderException;
 use App\Domain\Orders\Exceptions\PostcodeOutOfAreaException;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\ServiceArea;
 use App\Models\Setting;
 use App\Support\Money;
 
 /**
- * @phpstan-type CartLine array{product_id: string, quantity: int, options?: array<mixed>}
- * @phpstan-type PricedLine array{product: Product, quantity: int, unit_price: Money, line_total: Money, options: array<mixed>}
+ * @phpstan-type CartLine array{product_id: string, quantity: int, variant_id?: ?string, options?: array<mixed>}
+ * @phpstan-type PricedLine array{product: Product, variant: ?ProductVariant, quantity: int, unit_price: Money, line_total: Money, options: array<mixed>}
  * @phpstan-type PriceResult array{lines: array<int, PricedLine>, subtotal: Money, delivery_fee: Money, vat: Money, total: Money, service_area: ?ServiceArea}
  */
 class OrderPricingService
@@ -32,6 +33,11 @@ class OrderPricingService
             ->get()
             ->keyBy('id');
 
+        $variantIds = array_filter(array_column($items, 'variant_id'));
+        $variants = $variantIds
+            ? ProductVariant::query()->whereIn('id', $variantIds)->get()->keyBy('id')
+            : collect();
+
         $lines = [];
         $subtotal = Money::zero();
 
@@ -43,12 +49,21 @@ class OrderPricingService
                 throw new \InvalidArgumentException("Product {$line['product_id']} unavailable.");
             }
 
-            $unit = Money::fromPence($product->price_pence);
+            $variant = null;
+            if (! empty($line['variant_id'])) {
+                $variant = $variants->get($line['variant_id']);
+                if (! $variant || $variant->product_id !== $product->id || ! $variant->is_active) {
+                    throw new \InvalidArgumentException("Variant {$line['variant_id']} unavailable for product {$product->id}.");
+                }
+            }
+
+            $unit = Money::fromPence($variant ? (int) $variant->price_pence : (int) $product->price_pence);
             $lineTotal = $unit->times($quantity);
             $subtotal = $subtotal->plus($lineTotal);
 
             $lines[] = [
                 'product' => $product,
+                'variant' => $variant,
                 'quantity' => $quantity,
                 'unit_price' => $unit,
                 'line_total' => $lineTotal,

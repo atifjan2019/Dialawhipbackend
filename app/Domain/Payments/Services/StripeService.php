@@ -20,15 +20,17 @@ class StripeService
         $order->loadMissing(['items', 'customer']);
 
         $lineItems = $order->items->map(function ($item) {
-            $snapshot = $item->product_snapshot_json;
+            $snapshot = $item->product_snapshot_json ?? [];
+            $name = $snapshot['name'] ?? 'Catering item';
+            if (! empty($item->variant_label)) {
+                $name .= ' — ' . $item->variant_label;
+            }
             return [
                 'quantity' => $item->quantity,
                 'price_data' => [
                     'currency' => 'gbp',
                     'unit_amount' => $item->unit_price_pence,
-                    'product_data' => [
-                        'name' => $snapshot['name'] ?? 'Catering item',
-                    ],
+                    'product_data' => ['name' => $name],
                 ],
             ];
         })->all();
@@ -39,19 +41,33 @@ class StripeService
                 'price_data' => [
                     'currency' => 'gbp',
                     'unit_amount' => $order->delivery_fee_pence,
-                    'product_data' => ['name' => 'Delivery fee'],
+                    'product_data' => ['name' => 'Delivery fee (' . ($order->delivery_tier ?? 'standard') . ')'],
                 ],
             ];
         }
 
-        $frontend = rtrim((string) env('APP_FRONTEND_URL', 'http://localhost:3000'), '/');
+        if ($order->vat_pence > 0) {
+            $lineItems[] = [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => 'gbp',
+                    'unit_amount' => $order->vat_pence,
+                    'product_data' => ['name' => 'VAT'],
+                ],
+            ];
+        }
+
+        // Prefer explicit STRIPE_* URLs; otherwise fall back to FRONTEND_URL.
+        $frontend = rtrim((string) env('FRONTEND_URL', env('APP_FRONTEND_URL', 'http://localhost:3000')), '/');
+        $successUrl = (string) env('STRIPE_SUCCESS_URL', "$frontend/checkout/success?session_id={CHECKOUT_SESSION_ID}");
+        $cancelUrl = (string) env('STRIPE_CANCEL_URL', "$frontend/checkout?cancelled=1");
 
         $session = $this->stripe->checkout->sessions->create([
             'mode' => 'payment',
             'line_items' => $lineItems,
             'customer_email' => $order->customer->email,
-            'success_url' => "$frontend/checkout/success?session_id={CHECKOUT_SESSION_ID}",
-            'cancel_url' => "$frontend/cart",
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
             'client_reference_id' => $order->id,
             'metadata' => [
                 'order_id' => $order->id,

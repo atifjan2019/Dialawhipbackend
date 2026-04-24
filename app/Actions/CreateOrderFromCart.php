@@ -19,7 +19,7 @@ class CreateOrderFromCart
     ) {}
 
     /**
-     * @param  array<int, array{product_id: string, quantity: int, options?: array<mixed>}>  $items
+     * @param  array<int, array{product_id: string, quantity: int, variant_id?: ?string, options?: array<mixed>}>  $items
      */
     public function execute(
         User $customer,
@@ -69,10 +69,20 @@ class CreateOrderFromCart
             foreach ($priced['lines'] as $line) {
                 /** @var \App\Models\Product $product */
                 $product = $line['product'];
+                /** @var \App\Models\ProductVariant|null $variant */
+                $variant = $line['variant'] ?? null;
+
+                $snapshot = $product->toOrderSnapshot();
+                if ($variant) {
+                    $snapshot['variant'] = $variant->toSnapshot();
+                }
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
-                    'product_snapshot_json' => $product->toOrderSnapshot(),
+                    'product_variant_id' => $variant?->id,
+                    'variant_label' => $variant?->label,
+                    'product_snapshot_json' => $snapshot,
                     'quantity' => $line['quantity'],
                     'unit_price_pence' => $line['unit_price']->pence,
                     'line_total_pence' => $line['line_total']->pence,

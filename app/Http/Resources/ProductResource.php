@@ -28,6 +28,16 @@ class ProductResource extends JsonResource
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
             ]),
+            'variants' => $this->whenLoaded('variants', fn () => $this->variants->map(fn ($v) => [
+                'id' => $v->id,
+                'label' => $v->label,
+                'price_pence' => (int) $v->price_pence,
+                'qty_multiplier' => (int) $v->qty_multiplier,
+                'stock_count' => $v->stock_count !== null ? (int) $v->stock_count : null,
+                'sku' => $v->sku,
+                'sort_order' => (int) $v->sort_order,
+                'is_active' => (bool) $v->is_active,
+            ])->values()),
         ];
     }
 }

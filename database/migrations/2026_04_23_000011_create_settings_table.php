@@ -10,7 +10,9 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->string('key')->primary();
-            $table->jsonb('value');
+            // JSON-encoded value; nullable so a setting can be "unset" without deleting the row.
+            // On Postgres this is JSONB, on MySQL it falls back to JSON.
+            $table->json('value')->nullable();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
         });
     }

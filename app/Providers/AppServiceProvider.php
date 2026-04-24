@@ -10,12 +10,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Stripe SDK client — single shared instance, authenticated with the secret key.
+        $this->app->singleton(StripeClient::class, function () {
+            return new StripeClient((string) config('services.stripe.secret'));
+        });
     }
 
     public function boot(): void

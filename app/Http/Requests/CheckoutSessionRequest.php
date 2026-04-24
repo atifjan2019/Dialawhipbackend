@@ -16,6 +16,7 @@ class CheckoutSessionRequest extends FormRequest
         return [
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'string', 'exists:products,id'],
+            'items.*.variant_id' => ['nullable', 'string', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:500'],
             'items.*.options' => ['nullable', 'array'],
             'address_id' => ['required', 'string', 'exists:addresses,id'],

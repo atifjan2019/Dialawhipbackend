@@ -24,7 +24,7 @@ class CatalogController extends Controller
     public function products(Request $request): AnonymousResourceCollection
     {
         $query = Product::query()
-            ->with('category')
+            ->with(['category', 'variants' => fn ($q) => $q->where('is_active', true)])
             ->where('is_active', true);
 
         if ($categorySlug = $request->query('filter.category')) {
@@ -47,6 +47,8 @@ class CatalogController extends Controller
     {
         abort_unless($product->is_active, 404);
 
-        return response()->json(['data' => new ProductResource($product->load('category'))]);
+        $product->load(['category', 'variants' => fn ($q) => $q->where('is_active', true)]);
+
+        return response()->json(['data' => new ProductResource($product)]);
     }
 }

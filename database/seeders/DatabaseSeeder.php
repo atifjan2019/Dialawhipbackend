@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Settings\SettingsRegistry;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\ServiceArea;
 use App\Models\Setting;
 use App\Models\User;
@@ -19,6 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedUsers();
         $this->seedCatalog();
+        $this->seedVariantsExample();
         $this->seedServiceAreas();
         $this->seedSettings();
     }
@@ -190,6 +193,52 @@ class DatabaseSeeder extends Seeder
         }
     }
 
+    /**
+     * Adds the example variant-priced product: "CREAM DELUXE 6TH WAVE 666G".
+     * Pricing tiers (variants): 2 for £80, 3 for £120, 6 for £180.
+     */
+    private function seedVariantsExample(): void
+    {
+        $category = Category::firstOrCreate(
+            ['slug' => 'smartwhip-tanks'],
+            ['name' => 'Smartwhip tanks', 'sort_order' => 1, 'is_active' => true],
+        );
+
+        $product = Product::firstOrCreate(
+            ['slug' => 'cream-deluxe-6th-wave-666g'],
+            [
+                'category_id' => $category->id,
+                'name' => 'CREAM DELUXE 6TH WAVE 666G',
+                'brand' => 'Cream Deluxe',
+                'description' => '666g N₂O tank — 6th Wave edition. Pick the pack size that fits your service.',
+                'price_pence' => 8000, // fallback single-tank price; variants override this
+                'short_spec' => ['capacity_g' => 666, 'edition' => '6th Wave', 'purity' => '99.9%'],
+                'is_active' => true,
+                'is_age_restricted' => true,
+                'stock_count' => 50,
+            ],
+        );
+
+        $variants = [
+            ['2 tanks for £80', 8000, 2, 0],
+            ['3 tanks for £120', 12000, 3, 1],
+            ['6 tanks for £180', 18000, 6, 2],
+        ];
+
+        foreach ($variants as [$label, $price, $qty, $sort]) {
+            ProductVariant::updateOrCreate(
+                ['product_id' => $product->id, 'label' => $label],
+                [
+                    'price_pence' => $price,
+                    'qty_multiplier' => $qty,
+                    'sort_order' => $sort,
+                    'stock_count' => 20,
+                    'is_active' => true,
+                ],
+            );
+        }
+    }
+
     private function seedServiceAreas(): void
     {
         // Tyneside postcode coverage — ETA and fee per zone.
@@ -232,20 +281,12 @@ class DatabaseSeeder extends Seeder
 
     private function seedSettings(): void
     {
-        Setting::put('business.name', 'Dialawhip');
-        Setting::put('business.tagline', 'Newcastle · 20-minute catering supplies');
-        Setting::put('business.phone', '0191 000 0000');
-        Setting::put('business.email', 'hello@dialawhip.test');
-        Setting::put('business.address', 'Newcastle upon Tyne, UK');
-        Setting::put('business.hours', [
-            'tue_sun' => '10:00–03:00',
-            'mon' => 'Closed',
-        ]);
-        Setting::put('order.minimum_pence', 1500);
-        Setting::put('order.lead_time_hours', 0); // immediate
-        Setting::put('order.is_open', true);
-        Setting::put('vat.rate_bps', 2000); // 20% UK VAT
-        Setting::put('compliance.age_minimum', 18);
-        Setting::put('compliance.id_required_categories', ['cream-chargers', 'smartwhip-tanks', 'maxxi-tanks']);
+        // Seed defaults from the central settings registry (only if not already set).
+        foreach (SettingsRegistry::schema() as $key => $meta) {
+            if (Setting::where('key', $key)->exists()) {
+                continue;
+            }
+            Setting::put($key, $meta['default'] ?? null);
+        }
     }
 }
