@@ -25,6 +25,8 @@ class ProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'price_pence' => ['required', 'integer', 'min:0', 'max:1000000'],
             'image_url' => ['nullable', 'url'],
+            'gallery_urls' => ['nullable', 'array', 'max:20'],
+            'gallery_urls.*' => ['string', 'max:1024'],
             'options' => ['nullable', 'array'],
             'is_active' => ['boolean'],
             'available_from' => ['nullable', 'date_format:H:i'],

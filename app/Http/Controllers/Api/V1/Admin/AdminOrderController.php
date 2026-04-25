@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Domain\Orders\Services\OrderStatusService;
+use App\Domain\Payments\Services\OrderPaymentSync;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StatusTransitionRequest;
 use App\Http\Resources\OrderResource;
@@ -75,5 +76,19 @@ class AdminOrderController extends Controller
         $order->update(['assigned_driver_id' => $driver->id]);
 
         return response()->json(['data' => new OrderResource($order->load('driver'))]);
+    }
+
+    /**
+     * Pull live payment details from Stripe and persist on the order.
+     * Useful when the webhook hasn't arrived yet (e.g. local dev without
+     * stripe-cli forwarding) or when an admin wants the freshest data.
+     */
+    public function refreshPayment(Order $order, OrderPaymentSync $sync): JsonResponse
+    {
+        $sync->syncFromOrder($order);
+
+        return response()->json([
+            'data' => new OrderResource($order->fresh()->load(['items', 'address', 'events.actor', 'customer', 'driver'])),
+        ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Shop;
 
 use App\Domain\Orders\Exceptions\BelowMinimumOrderException;
 use App\Domain\Orders\Exceptions\PostcodeOutOfAreaException;
+use App\Domain\Orders\Exceptions\ShopClosedException;
 use App\Domain\Orders\Services\OrderPricingService;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
@@ -25,6 +26,12 @@ class PricingController extends Controller
 
         try {
             $result = $pricing->priceCart($data['items'], $data['postcode'] ?? null, $data['delivery_tier'] ?? 'standard');
+        } catch (ShopClosedException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'shop_closed',
+                'maintenance_message' => Setting::get('maintenance.message'),
+            ], 422);
         } catch (BelowMinimumOrderException $e) {
             return response()->json([
                 'message' => $e->getMessage(),

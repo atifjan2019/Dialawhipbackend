@@ -14,7 +14,8 @@ class Product extends Model
 
     protected $fillable = [
         'category_id', 'name', 'brand', 'slug', 'description', 'price_pence',
-        'image_url', 'options_json', 'short_spec', 'is_active', 'is_age_restricted',
+        'image_url', 'gallery_urls', 'options_json', 'short_spec',
+        'is_active', 'is_age_restricted',
         'available_from', 'available_until', 'stock_count',
     ];
 
@@ -25,6 +26,7 @@ class Product extends Model
             'stock_count' => 'integer',
             'options_json' => 'array',
             'short_spec' => 'array',
+            'gallery_urls' => 'array',
             'is_active' => 'boolean',
             'is_age_restricted' => 'boolean',
         ];
@@ -59,6 +61,7 @@ class Product extends Model
             'slug' => $this->slug,
             'price_pence' => $this->price_pence,
             'image_url' => $this->image_url,
+            'gallery_urls' => $this->gallery_urls ?? [],
             'is_age_restricted' => (bool) $this->is_age_restricted,
             'captured_at' => now()->toIso8601String(),
         ];

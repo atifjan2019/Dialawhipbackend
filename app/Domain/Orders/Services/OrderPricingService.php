@@ -4,6 +4,7 @@ namespace App\Domain\Orders\Services;
 
 use App\Domain\Orders\Exceptions\BelowMinimumOrderException;
 use App\Domain\Orders\Exceptions\PostcodeOutOfAreaException;
+use App\Domain\Orders\Exceptions\ShopClosedException;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ServiceArea;
@@ -24,6 +25,14 @@ class OrderPricingService
     {
         if ($items === []) {
             throw new \InvalidArgumentException('Cart is empty.');
+        }
+
+        // Honour the admin's "Shop accepting orders" toggle. When the admin
+        // turns this off, customers can still browse but cannot price or
+        // place orders.
+        $isOpen = Setting::get('order.is_open', true);
+        if ($isOpen === false || $isOpen === 0 || $isOpen === '0') {
+            throw new ShopClosedException();
         }
 
         $productIds = array_column($items, 'product_id');

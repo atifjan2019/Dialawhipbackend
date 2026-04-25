@@ -29,6 +29,9 @@ class Order extends Model
         'status', 'subtotal_pence', 'delivery_fee_pence', 'vat_pence', 'total_pence',
         'delivery_tier', 'statement_of_use_accepted', 'n2o_agreement_accepted',
         'stripe_session_id', 'stripe_payment_intent_id',
+        'paid_at', 'amount_paid_pence', 'payment_currency',
+        'card_brand', 'card_last4', 'payment_method_type', 'receipt_url',
+        'refund_id', 'refunded_at', 'amount_refunded_pence',
         'scheduled_for', 'customer_notes', 'driver_notes',
     ];
 
@@ -39,10 +42,23 @@ class Order extends Model
             'delivery_fee_pence' => 'integer',
             'vat_pence' => 'integer',
             'total_pence' => 'integer',
+            'amount_paid_pence' => 'integer',
+            'amount_refunded_pence' => 'integer',
             'statement_of_use_accepted' => 'boolean',
             'n2o_agreement_accepted' => 'boolean',
             'scheduled_for' => 'datetime',
+            'paid_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Returns true when Stripe has confirmed payment for this order.
+     * The webhook sets `paid_at` once `checkout.session.completed` arrives.
+     */
+    public function isPaid(): bool
+    {
+        return $this->paid_at !== null;
     }
 
     public function customer(): BelongsTo

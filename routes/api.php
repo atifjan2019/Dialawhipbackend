@@ -78,12 +78,14 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
         Route::get('orders/{order}', [AdminOrderController::class, 'show']);
         Route::patch('orders/{order}/status', [AdminOrderController::class, 'transition']);
         Route::patch('orders/{order}/assign', [AdminOrderController::class, 'assign']);
+        Route::post('orders/{order}/payment/refresh', [AdminOrderController::class, 'refreshPayment']);
 
         Route::get('customers', [AdminCustomerController::class, 'index']);
         Route::get('customers/{customer}', [AdminCustomerController::class, 'show']);
 
         Route::get('products', [AdminProductController::class, 'index']);
         Route::post('products', [AdminProductController::class, 'store']);
+        Route::post('products/upload', [AdminProductController::class, 'uploadImage']);
         Route::get('products/{product}', [AdminProductController::class, 'show']);
         Route::patch('products/{product}', [AdminProductController::class, 'update']);
         Route::delete('products/{product}', [AdminProductController::class, 'destroy']);

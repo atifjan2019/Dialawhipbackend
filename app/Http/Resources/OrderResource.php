@@ -26,11 +26,41 @@ class OrderResource extends JsonResource
             'driver_notes' => $this->driver_notes,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'payment' => $this->paymentBlock(),
             'customer' => $this->whenLoaded('customer', fn () => new UserResource($this->customer)),
             'driver' => $this->whenLoaded('driver', fn () => $this->driver ? new UserResource($this->driver) : null),
             'address' => $this->whenLoaded('address', fn () => $this->address ? new AddressResource($this->address) : null),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'events' => OrderEventResource::collection($this->whenLoaded('events')),
+        ];
+    }
+
+    /**
+     * Build the payment summary surfaced to the admin / customer panels.
+     *
+     * @return array<string, mixed>
+     */
+    private function paymentBlock(): array
+    {
+        $isRefunded = $this->refunded_at !== null;
+        $isPaid = $this->paid_at !== null;
+
+        return [
+            'status' => $isRefunded ? 'refunded' : ($isPaid ? 'paid' : 'unpaid'),
+            'is_paid' => $isPaid,
+            'is_refunded' => $isRefunded,
+            'paid_at' => $this->paid_at,
+            'amount_paid_pence' => $this->amount_paid_pence !== null ? (int) $this->amount_paid_pence : null,
+            'currency' => $this->payment_currency,
+            'card_brand' => $this->card_brand,
+            'card_last4' => $this->card_last4,
+            'method' => $this->payment_method_type,
+            'receipt_url' => $this->receipt_url,
+            'stripe_session_id' => $this->stripe_session_id,
+            'stripe_payment_intent_id' => $this->stripe_payment_intent_id,
+            'refund_id' => $this->refund_id,
+            'refunded_at' => $this->refunded_at,
+            'amount_refunded_pence' => $this->amount_refunded_pence !== null ? (int) $this->amount_refunded_pence : null,
         ];
     }
 }

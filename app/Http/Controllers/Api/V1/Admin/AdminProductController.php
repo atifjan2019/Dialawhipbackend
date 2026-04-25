@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AdminProductController extends Controller
 {
@@ -83,6 +84,37 @@ class AdminProductController extends Controller
         Product::where('id', $product)->firstOrFail()->delete();
 
         return response()->json(['data' => ['deleted' => true]]);
+    }
+
+    /**
+     * Upload a product image (featured or gallery).
+     *
+     * Body (multipart):
+     *   file  : image file (required, ≤ 6 MB)
+     *
+     * Response:
+     *   { data: { url, path, disk } }
+     *
+     * The frontend uses the returned `url` either as the product's
+     * `image_url` (featured) or appends it to `gallery_urls`.
+     */
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:6144', 'mimes:jpg,jpeg,png,webp,gif'],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('products', 'public');
+        $url = Storage::disk('public')->url($path);
+
+        return response()->json([
+            'data' => [
+                'url' => $url,
+                'path' => $path,
+                'disk' => 'public',
+            ],
+        ], 201);
     }
 
     /**

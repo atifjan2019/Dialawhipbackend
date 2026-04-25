@@ -16,6 +16,7 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'price_pence' => (int) $this->price_pence,
             'image_url' => $this->image_url,
+            'gallery_urls' => $this->gallery_urls ?? [],
             'options' => $this->options_json,
             'short_spec' => $this->short_spec,
             'is_active' => (bool) $this->is_active,

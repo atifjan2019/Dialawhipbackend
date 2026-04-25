@@ -13,10 +13,26 @@ use Illuminate\Validation\ValidationException;
 
 class DeliveryController extends Controller
 {
+    /**
+     * Statuses an assigned driver is allowed to set on an order.
+     *
+     * Once admin assigns the rider, the rider takes the order through:
+     *   confirmed  → in_prep         (start packing)
+     *   in_prep    → out_for_delivery (start the run)
+     *   out_for_delivery → delivered  (success)
+     *                    → failed     (delivery failed)
+     *   failed     → out_for_delivery (retry)
+     *   any pre-delivery → cancelled  (rider cancels — e.g. customer not home)
+     *
+     * The OrderStatusService still enforces the StateMachine, so invalid
+     * jumps (e.g. confirmed → delivered) are rejected.
+     */
     private const DRIVER_ALLOWED_STATUSES = [
+        Order::STATUS_IN_PREP,
         Order::STATUS_OUT_FOR_DELIVERY,
         Order::STATUS_DELIVERED,
         Order::STATUS_FAILED,
+        Order::STATUS_CANCELLED,
     ];
 
     public function index(Request $request): AnonymousResourceCollection
@@ -48,9 +64,26 @@ class DeliveryController extends Controller
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Cancellation requires the rider to record why — it lands on the order
+        // event timeline so admins can see why the run didn't complete.
+        if ($data['to_status'] === Order::STATUS_CANCELLED && trim((string) ($data['note'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'note' => 'Please provide a reason for cancelling this delivery.',
+            ]);
+        }
+
+        // Same expectation for failed deliveries — the rider should explain.
+        if ($data['to_status'] === Order::STATUS_FAILED && trim((string) ($data['note'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'note' => 'Please describe why the delivery failed.',
+            ]);
+        }
+
         $service->transition($order, $data['to_status'], $request->user(), $data['note'] ?? null);
 
-        return response()->json(['data' => new OrderResource($order->fresh(['items', 'events.actor']))]);
+        return response()->json([
+            'data' => new OrderResource($order->fresh(['items', 'events.actor', 'address', 'customer'])),
+        ]);
     }
 
     public function appendNote(Request $request, Order $order): JsonResponse
