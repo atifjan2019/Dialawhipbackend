@@ -17,15 +17,28 @@ class AdminReportController extends Controller
         $from = Carbon::parse($request->query('from', now()->subDays(30)->toDateString()));
         $to = Carbon::parse($request->query('to', now()->toDateString()))->endOfDay();
         $groupBy = $request->query('groupBy', 'day');
-        $format = match ($groupBy) {
-            'week' => '%Y-%W',
-            'month' => '%Y-%m',
-            default => '%Y-%m-%d',
-        };
+
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $format = match ($groupBy) {
+                'week' => '%Y-%W',
+                'month' => '%Y-%m',
+                default => '%Y-%m-%d',
+            };
+            $bucketExpr = "strftime('$format', created_at)";
+        } else {
+            // MySQL / MariaDB
+            $format = match ($groupBy) {
+                'week' => '%x-%v',  // ISO 8601 week-numbering year + week
+                'month' => '%Y-%m',
+                default => '%Y-%m-%d',
+            };
+            $bucketExpr = "DATE_FORMAT(created_at, '$format')";
+        }
 
         $rows = Order::whereBetween('created_at', [$from, $to])
             ->whereIn('status', [Order::STATUS_CONFIRMED, Order::STATUS_IN_PREP, Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_DELIVERED, Order::STATUS_REFUNDED])
-            ->selectRaw("strftime('$format', created_at) as bucket, SUM(total_pence) as revenue_pence, COUNT(*) as count")
+            ->selectRaw("$bucketExpr as bucket, SUM(total_pence) as revenue_pence, COUNT(*) as count")
             ->groupBy('bucket')->orderBy('bucket')->get();
 
         return response()->json(['data' => $rows]);
